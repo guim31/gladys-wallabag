@@ -1,0 +1,77 @@
+{
+  "status": 200,
+  "body": {
+    "page": 1,
+    "limit": 1,
+    "pages": 1,
+    "total": 1,
+    "_links": {
+      "self": {
+        "href": "http://gladys-test-wallabag/api/entries?starred=1&sort=created&order=desc&tags=&since=0&detail=metadata&page=1&perPage=1"
+      },
+      "first": {
+        "href": "http://gladys-test-wallabag/api/entries?starred=1&sort=created&order=desc&tags=&since=0&detail=metadata&page=1&perPage=1"
+      },
+      "last": {
+        "href": "http://gladys-test-wallabag/api/entries?starred=1&sort=created&order=desc&tags=&since=0&detail=metadata&page=1&perPage=1"
+      }
+    },
+    "_embedded": {
+      "items": [
+        {
+          "is_archived": 0,
+          "is_starred": 1,
+          "user_name": "wallabag",
+          "user_email": "wallabag@wallabag.io",
+          "user_id": 1,
+          "tags": [
+            {
+              "id": 1,
+              "label": "domotique",
+              "slug": "t:domotique"
+            },
+            {
+              "id": 2,
+              "label": "zigbee",
+              "slug": "t:zigbee"
+            },
+            {
+              "id": 6,
+              "label": "later",
+              "slug": "t:later"
+            }
+          ],
+          "is_public": false,
+          "id": 7,
+          "uid": null,
+          "title": "Zigbee tips for beginners",
+          "url": "https://blog.example.org/zigbee-tips",
+          "hashed_url": "8723df943b2cccafc952d90dce342b4751c3484a",
+          "origin_url": null,
+          "given_url": "https://blog.example.org/zigbee-tips",
+          "hashed_given_url": "8723df943b2cccafc952d90dce342b4751c3484a",
+          "archived_at": null,
+          "content": null,
+          "created_at": "2026-10-22T00:41:45+0000",
+          "updated_at": "2026-10-22T00:41:45+0000",
+          "published_at": null,
+          "published_by": [""],
+          "starred_at": "2026-10-22T00:41:45+0000",
+          "annotations": [],
+          "mimetype": null,
+          "language": "en",
+          "reading_time": 9,
+          "domain_name": "blog.example.org",
+          "preview_picture": null,
+          "http_status": null,
+          "headers": null,
+          "_links": {
+            "self": {
+              "href": "/api/entries/7"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

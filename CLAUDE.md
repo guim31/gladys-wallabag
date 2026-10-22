@@ -16,8 +16,8 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/hub.test.js              # one file
+node --test --test-name-pattern "widget"  # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
@@ -32,15 +32,20 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+src/app.js                        registers every SDK handler on the hub (shared with the tests)
+src/hub.js                        the link to Wallabag: timer, device, states, triggers, status, actions
+src/devices.js                    the Wallabag device (four counters) and its states
+src/wallabag/client.js            REST API + OAuth2 (password, refresh_token), errors by kind
+src/wallabag/model.js             entries -> plain values; dates, addresses, tags, durations
+src/store.js                      /data/wallabag-state.json: what the triggers already saw
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/widgets.js                    dashboard widget and its button (manifest `widgets`)
+src/texts.js                      every text produced by the container, in four languages
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (same sections)
+test/                             node --test, SDK fake Gladys + fake Wallabag (test/helpers/)
+test/fixtures/wallabag/2.6.14/    bodies recorded on a real Wallabag 2.6.14
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,10 +75,55 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, manifest texts, widget content, feature names, and
+  `docs/{en,fr,de,es}.md`, kept in sync (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
+
+## Wallabag
+
+- **OAuth2 only**: an API client (Wallabag → API clients management, or the
+  `wallabag_oauth2_clients` table) and the user's login, `password` grant on
+  `POST /oauth/v2/token` (form-encoded), then `refresh_token` grant. The access
+  token lasts 3600 s, the refresh token 14 days; a used refresh token is
+  spent. Errors there are **400** `invalid_grant` (wrong login, wrong refresh
+  token) or `invalid_client`; an API call with a bad token is a **401**
+  `{ error, error_description }`. Other errors are
+  `{ type, title, status, detail }` (404 "Not Found", 500).
+- `fos:oauth-server:create-client` is **broken** in the 2.6 image (it expects
+  a user): to script a test client, insert a row in `wallabag_oauth2_clients`
+  (`user_id`, `random_id`, `secret`, `redirect_uris` `a:0:{}`,
+  `allowed_grant_types` serialized PHP array); its client id is
+  `<id>_<random_id>`. The image (SQLite) creates the user `wallabag` /
+  `wallabag`; `GET /api/info` is public (version).
+- `GET /api/entries.json`: paged (`page`, `perPage`, `total`, `pages`,
+  `_embedded.items`), `sort` = `created` | `updated` | `archived`, `archive`,
+  `starred`, `tags` (comma list), **`detail=metadata`** leaves the content out.
+  A page past the last one is a **404**. `is_archived`/`is_starred` are 0/1;
+  dates are `2026-10-22T00:41:45+0000` (no milliseconds: the archive cursor
+  keeps the ids archived in the same second); `reading_time` in minutes.
+- `POST /api/entries.json` **fetches the page before answering** (timeout 50
+  s, scene action 60 s), saves **any text** as url (even "not a url"; no `url`
+  at all is a 500): the address is checked here. An address already saved
+  answers the existing entry, tags merged. `title`/`content` in the body skip
+  the fetch (how the fixtures were made: the fetcher of the image did not reach
+  a test page server on the Docker network).
+- `GET /api/entries/exists.json?url=&return_id=1` → `{ exists: <id> | null }`
+  (without `return_id`: a boolean).
+- `GET /api/user.json` gives the user id: the device is `wallabag:<user id>`.
+- One read = unread pages (100 × 20 max, reading time extrapolated past that),
+  starred count (`perPage=1`), archived pages down to local midnight (read
+  today + "Article archived"), the 50 newest saved (ids only grow: "New
+  article"). No tag filter on the triggers: an event carries one value per key.
+
+## Testing with Docker
+
+- `wallabag/wallabag` (SQLite by default, about a minute to install, port 80,
+  `SYMFONY__ENV__DOMAIN_NAME`), on a bridge network `gladys-test-wallabag`;
+  a Node container on the same network drives the API.
+- Tests on Node 22: the timer of `AbortSignal.timeout` does not hold the event
+  loop; the "slow" fake `fetch` holds it itself until the abort.
 
 ---
 

@@ -1,0 +1,7 @@
+{
+  "status": 400,
+  "body": {
+    "error": "invalid_client",
+    "error_description": "The client credentials are invalid"
+  }
+}

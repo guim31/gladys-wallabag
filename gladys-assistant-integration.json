@@ -1,177 +1,851 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Wallabag",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Your Wallabag read-it-later in Gladys: unread articles, new article, save a link from a scene.",
+    "fr": "Votre Wallabag dans Gladys : articles non lus, nouvel article, enregistrer un lien par scène.",
+    "de": "Dein Wallabag in Gladys: ungelesene Artikel, neuer Artikel, Link per Szene speichern.",
+    "es": "Su Wallabag en Gladys: artículos sin leer, nuevo artículo, guardar un enlace desde una escena."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-wallabag:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-wallabag/main/cover.png",
+  "categories": ["services"],
   "transports": ["local", "cloud"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Connect Wallabag",
+        "fr": "Connecter Wallabag",
+        "de": "Wallabag verbinden",
+        "es": "Conectar Wallabag"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Enter the address of your Wallabag (or https://app.wallabag.it), then an API client: in Wallabag, open API clients management → Create a new client, and copy its client ID and client secret. Add your Wallabag username and password: the integration logs in with them to read your unread articles, announce the new and archived ones, and save links from your scenes.",
+        "fr": "Saisissez l'adresse de votre Wallabag (ou https://app.wallabag.it), puis un client d'API : dans Wallabag, ouvrez Gestion des clients API → Créer un nouveau client, et copiez son ID client et son secret client. Ajoutez votre nom d'utilisateur et votre mot de passe Wallabag : l'intégration s'en sert pour lire vos articles non lus, annoncer les nouveaux et les archivés, et enregistrer des liens depuis vos scènes.",
+        "de": "Gib die Adresse deines Wallabag ein (oder https://app.wallabag.it), dann einen API-Client: Öffne in Wallabag die API-Client-Verwaltung → Neuen Client erstellen und kopiere Client-ID und Client-Secret. Ergänze deinen Wallabag-Benutzernamen und dein Passwort: Die Integration meldet sich damit an, liest deine ungelesenen Artikel, meldet neue und archivierte Artikel und speichert Links aus deinen Szenen.",
+        "es": "Introduzca la dirección de su Wallabag (o https://app.wallabag.it) y luego un cliente de API: en Wallabag, abra Configuración de clientes API → Crear un nuevo cliente, y copie su ID de cliente y su secreto de cliente. Añada su nombre de usuario y su contraseña de Wallabag: la integración los usa para leer sus artículos sin leer, anunciar los nuevos y los archivados, y guardar enlaces desde sus escenas."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://doc.wallabag.org/developer/api/oauth/",
+          "label": {
+            "en": "Wallabag API documentation",
+            "fr": "Documentation de l'API Wallabag",
+            "de": "Wallabag-API-Dokumentation",
+            "es": "Documentación de la API de Wallabag"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "key": "url",
+      "type": "string",
       "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "default": "",
+      "label": {
+        "en": "Wallabag address",
+        "fr": "Adresse de Wallabag",
+        "de": "Wallabag-Adresse",
+        "es": "Dirección de Wallabag"
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.50:8080",
+        "fr": "ex. 192.168.1.50:8080",
+        "de": "z. B. 192.168.1.50:8080",
+        "es": "p. ej. 192.168.1.50:8080"
+      }
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
+      "key": "client_id",
+      "type": "string",
       "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "default": "",
+      "label": {
+        "en": "Client ID",
+        "fr": "ID client",
+        "de": "Client-ID",
+        "es": "ID de cliente"
+      },
+      "placeholder": {
+        "en": "e.g. 1_3bcbxd9e24g0gk4swg0k0",
+        "fr": "ex. 1_3bcbxd9e24g0gk4swg0k0",
+        "de": "z. B. 1_3bcbxd9e24g0gk4swg0k0",
+        "es": "p. ej. 1_3bcbxd9e24g0gk4swg0k0"
+      },
+      "description": {
+        "en": "Wallabag → API clients management → Create a new client.",
+        "fr": "Wallabag → Gestion des clients API → Créer un nouveau client.",
+        "de": "Wallabag → API-Client-Verwaltung → Neuen Client erstellen.",
+        "es": "Wallabag → Configuración de clientes API → Crear un nuevo cliente."
+      }
     },
     {
-      "key": "unit",
+      "key": "client_secret",
+      "type": "secret",
+      "required": true,
+      "label": {
+        "en": "Client secret",
+        "fr": "Secret client",
+        "de": "Client-Secret",
+        "es": "Secreto de cliente"
+      }
+    },
+    {
+      "key": "username",
+      "type": "string",
+      "required": true,
+      "default": "",
+      "label": {
+        "en": "Username",
+        "fr": "Nom d'utilisateur",
+        "de": "Benutzername",
+        "es": "Nombre de usuario"
+      }
+    },
+    {
+      "key": "password",
+      "type": "secret",
+      "required": true,
+      "label": {
+        "en": "Password",
+        "fr": "Mot de passe",
+        "de": "Passwort",
+        "es": "Contraseña"
+      }
+    },
+    {
+      "key": "refresh_minutes",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
       "required": false,
-      "default": "celsius",
+      "default": "5",
+      "label": {
+        "en": "Read Wallabag every",
+        "fr": "Lire Wallabag toutes les",
+        "de": "Wallabag lesen alle",
+        "es": "Leer Wallabag cada"
+      },
+      "description": {
+        "en": "New and archived articles are announced at the next read.",
+        "fr": "Les articles nouveaux et archivés sont annoncés à la lecture suivante.",
+        "de": "Neue und archivierte Artikel werden beim nächsten Lesen gemeldet.",
+        "es": "Los artículos nuevos y archivados se anuncian en la siguiente lectura."
+      },
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "1",
+          "label": {
+            "en": "1 minute",
+            "fr": "1 minute",
+            "de": "1 Minute",
+            "es": "1 minuto"
+          }
+        },
+        {
+          "value": "5",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 minutes",
+            "fr": "30 minutes",
+            "de": "30 Minuten",
+            "es": "30 minutos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "60 minutes",
+            "fr": "60 minutes",
+            "de": "60 Minuten",
+            "es": "60 minutos"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of names and messages",
+        "fr": "Langue des noms et messages",
+        "de": "Sprache der Namen und Meldungen",
+        "es": "Idioma de nombres y mensajes"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Feature names are set when a device is added to Gladys.",
+        "fr": "Les noms des fonctionnalités sont fixés à l'ajout d'un appareil dans Gladys.",
+        "de": "Die Namen der Funktionen werden beim Hinzufügen eines Geräts zu Gladys festgelegt.",
+        "es": "Los nombres de las funciones se fijan al añadir un dispositivo a Gladys."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
       "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "new_entry",
+      "label": {
+        "en": "New article",
+        "fr": "Nouvel article",
+        "de": "Neuer Artikel",
+        "es": "Nuevo artículo"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "An article was saved in Wallabag (not at the first read).",
+        "fr": "Un article a été enregistré dans Wallabag (pas à la première lecture).",
+        "de": "Ein Artikel wurde in Wallabag gespeichert (nicht beim ersten Lesen).",
+        "es": "Se ha guardado un artículo en Wallabag (no en la primera lectura)."
       },
       "fields": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "key": "domain",
+          "type": "string",
+          "required": false,
+          "label": {
+            "en": "Site (empty: all)",
+            "fr": "Site (vide : tous)",
+            "de": "Website (leer: alle)",
+            "es": "Sitio (vacío: todos)"
+          },
+          "placeholder": {
+            "en": "e.g. www.lemonde.fr",
+            "fr": "ex. www.lemonde.fr",
+            "de": "z. B. www.lemonde.fr",
+            "es": "p. ej. www.lemonde.fr"
+          },
+          "description": {
+            "en": "The domain of the article, exactly as Wallabag shows it.",
+            "fr": "Le domaine de l'article, exactement comme Wallabag l'affiche.",
+            "de": "Die Domain des Artikels, genau wie Wallabag sie anzeigt.",
+            "es": "El dominio del artículo, exactamente como lo muestra Wallabag."
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "title",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "url",
+          "type": "string",
+          "label": {
+            "en": "Link",
+            "fr": "Lien",
+            "de": "Link",
+            "es": "Enlace"
+          }
+        },
+        {
+          "key": "domain",
+          "type": "string",
+          "label": {
+            "en": "Site",
+            "fr": "Site",
+            "de": "Website",
+            "es": "Sitio"
+          }
+        },
+        {
+          "key": "tags",
+          "type": "string",
+          "label": {
+            "en": "Tags",
+            "fr": "Tags",
+            "de": "Tags",
+            "es": "Etiquetas"
+          }
+        },
+        {
+          "key": "reading_time",
+          "type": "number",
+          "label": {
+            "en": "Reading time (minutes)",
+            "fr": "Temps de lecture (minutes)",
+            "de": "Lesezeit (Minuten)",
+            "es": "Tiempo de lectura (minutos)"
+          }
+        },
+        {
+          "key": "starred",
+          "type": "boolean",
+          "label": {
+            "en": "Starred",
+            "fr": "Favori",
+            "de": "Favorit",
+            "es": "Favorito"
+          }
+        },
+        {
+          "key": "entry_id",
+          "type": "number",
+          "label": {
+            "en": "Article id",
+            "fr": "Identifiant de l'article",
+            "de": "Artikel-ID",
+            "es": "Id. del artículo"
+          }
+        }
+      ]
+    },
+    {
+      "key": "entry_archived",
+      "label": {
+        "en": "Article archived",
+        "fr": "Article archivé",
+        "de": "Artikel archiviert",
+        "es": "Artículo archivado"
+      },
+      "description": {
+        "en": "An article was marked as read (archived) in Wallabag.",
+        "fr": "Un article a été marqué comme lu (archivé) dans Wallabag.",
+        "de": "Ein Artikel wurde in Wallabag als gelesen markiert (archiviert).",
+        "es": "Se ha marcado un artículo como leído (archivado) en Wallabag."
+      },
+      "fields": [
+        {
+          "key": "domain",
+          "type": "string",
+          "required": false,
+          "label": {
+            "en": "Site (empty: all)",
+            "fr": "Site (vide : tous)",
+            "de": "Website (leer: alle)",
+            "es": "Sitio (vacío: todos)"
+          },
+          "placeholder": {
+            "en": "e.g. www.lemonde.fr",
+            "fr": "ex. www.lemonde.fr",
+            "de": "z. B. www.lemonde.fr",
+            "es": "p. ej. www.lemonde.fr"
+          },
+          "description": {
+            "en": "The domain of the article, exactly as Wallabag shows it.",
+            "fr": "Le domaine de l'article, exactement comme Wallabag l'affiche.",
+            "de": "Die Domain des Artikels, genau wie Wallabag sie anzeigt.",
+            "es": "El dominio del artículo, exactamente como lo muestra Wallabag."
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "url",
+          "type": "string",
+          "label": {
+            "en": "Link",
+            "fr": "Lien",
+            "de": "Link",
+            "es": "Enlace"
+          }
+        },
+        {
+          "key": "domain",
+          "type": "string",
+          "label": {
+            "en": "Site",
+            "fr": "Site",
+            "de": "Website",
+            "es": "Sitio"
+          }
+        },
+        {
+          "key": "tags",
+          "type": "string",
+          "label": {
+            "en": "Tags",
+            "fr": "Tags",
+            "de": "Tags",
+            "es": "Etiquetas"
+          }
+        },
+        {
+          "key": "reading_time",
+          "type": "number",
+          "label": {
+            "en": "Reading time (minutes)",
+            "fr": "Temps de lecture (minutes)",
+            "de": "Lesezeit (Minuten)",
+            "es": "Tiempo de lectura (minutos)"
+          }
+        },
+        {
+          "key": "starred",
+          "type": "boolean",
+          "label": {
+            "en": "Starred",
+            "fr": "Favori",
+            "de": "Favorit",
+            "es": "Favorito"
+          }
+        },
+        {
+          "key": "entry_id",
+          "type": "number",
+          "label": {
+            "en": "Article id",
+            "fr": "Identifiant de l'article",
+            "de": "Artikel-ID",
+            "es": "Id. del artículo"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "save_url",
+      "label": {
+        "en": "Save a link in Wallabag",
+        "fr": "Enregistrer un lien dans Wallabag",
+        "de": "Link in Wallabag speichern",
+        "es": "Guardar un enlace en Wallabag"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Wallabag fetches the page and keeps it to read later, with the tags given.",
+        "fr": "Wallabag récupère la page et la garde pour plus tard, avec les tags donnés.",
+        "de": "Wallabag ruft die Seite ab und hebt sie mit den angegebenen Tags für später auf.",
+        "es": "Wallabag obtiene la página y la guarda para más tarde, con las etiquetas indicadas."
+      },
+      "timeout_seconds": 60,
       "fields": [
         {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
+          "key": "url",
+          "type": "string",
+          "required": true,
+          "label": {
+            "en": "Address",
+            "fr": "Adresse",
+            "de": "Adresse",
+            "es": "Dirección"
+          },
+          "placeholder": {
+            "en": "https://…",
+            "fr": "https://…",
+            "de": "https://…",
+            "es": "https://…"
+          },
+          "description": {
+            "en": "A web address, or a variable holding one.",
+            "fr": "Une adresse web, ou une variable qui en contient une.",
+            "de": "Eine Webadresse oder eine Variable, die eine enthält.",
+            "es": "Una dirección web, o una variable que contenga una."
+          }
+        },
+        {
+          "key": "tags",
+          "type": "string",
+          "required": false,
+          "label": {
+            "en": "Tags (optional)",
+            "fr": "Tags (facultatif)",
+            "de": "Tags (optional)",
+            "es": "Etiquetas (opcional)"
+          },
+          "placeholder": {
+            "en": "e.g. cooking, weekend",
+            "fr": "ex. cuisine, week-end",
+            "de": "z. B. Kochen, Wochenende",
+            "es": "p. ej. cocina, fin de semana"
+          },
+          "description": {
+            "en": "Separated by commas.",
+            "fr": "Séparés par des virgules.",
+            "de": "Durch Kommas getrennt.",
+            "es": "Separadas por comas."
+          }
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "entry_id",
+          "type": "number",
+          "label": {
+            "en": "Article id",
+            "fr": "Identifiant de l'article",
+            "de": "Artikel-ID",
+            "es": "Id. del artículo"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "domain",
+          "type": "string",
+          "label": {
+            "en": "Site",
+            "fr": "Site",
+            "de": "Website",
+            "es": "Sitio"
+          }
+        },
+        {
+          "key": "reading_time",
+          "type": "number",
+          "label": {
+            "en": "Reading time (minutes)",
+            "fr": "Temps de lecture (minutes)",
+            "de": "Lesezeit (Minuten)",
+            "es": "Tiempo de lectura (minutos)"
+          }
+        },
+        {
+          "key": "already_saved",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Already saved before",
+            "fr": "Déjà enregistré avant",
+            "de": "Schon vorher gespeichert",
+            "es": "Ya guardado antes"
+          }
+        }
+      ]
+    },
+    {
+      "key": "archive_entry",
+      "label": {
+        "en": "Mark a Wallabag article as read",
+        "fr": "Marquer un article Wallabag comme lu",
+        "de": "Wallabag-Artikel als gelesen markieren",
+        "es": "Marcar un artículo de Wallabag como leído"
+      },
+      "description": {
+        "en": "Archives an article: its id (e.g. the article id of a trigger) or its address.",
+        "fr": "Archive un article : son identifiant (par exemple celui d'un déclencheur) ou son adresse.",
+        "de": "Archiviert einen Artikel: seine ID (z. B. die Artikel-ID eines Auslösers) oder seine Adresse.",
+        "es": "Archiva un artículo: su id. (p. ej. el id. del artículo de un disparador) o su dirección."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "entry",
+          "type": "string",
+          "required": true,
+          "label": {
+            "en": "Article id or address",
+            "fr": "Identifiant ou adresse de l'article",
+            "de": "Artikel-ID oder Adresse",
+            "es": "Id. o dirección del artículo"
+          },
+          "placeholder": {
+            "en": "e.g. 1234",
+            "fr": "ex. 1234",
+            "de": "z. B. 1234",
+            "es": "p. ej. 1234"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "key": "entry_id",
+          "type": "number",
+          "label": {
+            "en": "Article id",
+            "fr": "Identifiant de l'article",
+            "de": "Artikel-ID",
+            "es": "Id. del artículo"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        }
+      ]
+    },
+    {
+      "key": "read_unread",
+      "label": {
+        "en": "Read the unread Wallabag titles",
+        "fr": "Lire les titres non lus de Wallabag",
+        "de": "Ungelesene Wallabag-Titel lesen",
+        "es": "Leer los títulos sin leer de Wallabag"
+      },
+      "description": {
+        "en": "Reads the articles saved most recently and not read yet, to send them in a message.",
+        "fr": "Lit les articles enregistrés le plus récemment et pas encore lus, pour les envoyer dans un message.",
+        "de": "Liest die zuletzt gespeicherten, noch ungelesenen Artikel, um sie in einer Nachricht zu senden.",
+        "es": "Lee los artículos guardados más recientemente y aún sin leer, para enviarlos en un mensaje."
+      },
+      "timeout_seconds": 30,
+      "fields": [
+        {
+          "key": "count",
+          "type": "select",
+          "required": false,
+          "default": "5",
+          "label": {
+            "en": "Number of articles",
+            "fr": "Nombre d'articles",
+            "de": "Anzahl der Artikel",
+            "es": "Número de artículos"
+          },
+          "options": [
+            {
+              "value": "1",
+              "label": {
+                "en": "1",
+                "fr": "1",
+                "de": "1",
+                "es": "1"
+              }
+            },
+            {
+              "value": "3",
+              "label": {
+                "en": "3",
+                "fr": "3",
+                "de": "3",
+                "es": "3"
+              }
+            },
+            {
+              "value": "5",
+              "label": {
+                "en": "5",
+                "fr": "5",
+                "de": "5",
+                "es": "5"
+              }
+            },
+            {
+              "value": "10",
+              "label": {
+                "en": "10",
+                "fr": "10",
+                "de": "10",
+                "es": "10"
+              }
+            }
+          ]
+        },
+        {
+          "key": "tag",
+          "type": "string",
+          "required": false,
+          "label": {
+            "en": "Tag (empty: all)",
+            "fr": "Tag (vide : tous)",
+            "de": "Tag (leer: alle)",
+            "es": "Etiqueta (vacío: todas)"
+          },
+          "placeholder": {
+            "en": "e.g. cooking",
+            "fr": "ex. cuisine",
+            "de": "z. B. Kochen",
+            "es": "p. ej. cocina"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "key": "count",
+          "type": "number",
+          "label": {
+            "en": "Articles read",
+            "fr": "Articles lus",
+            "de": "Gelesene Artikel",
+            "es": "Artículos leídos"
+          }
+        },
+        {
+          "key": "unread",
+          "type": "number",
+          "label": {
+            "en": "Unread articles in all",
+            "fr": "Articles non lus en tout",
+            "de": "Ungelesene Artikel insgesamt",
+            "es": "Artículos sin leer en total"
+          }
+        },
+        {
+          "key": "titles",
+          "type": "string",
+          "label": {
+            "en": "Titles, one per line",
+            "fr": "Titres, un par ligne",
+            "de": "Titel, einer pro Zeile",
+            "es": "Títulos, uno por línea"
+          }
+        },
+        {
+          "key": "reading_time",
+          "type": "number",
+          "label": {
+            "en": "Their reading time (minutes)",
+            "fr": "Leur temps de lecture (minutes)",
+            "de": "Lesezeit dieser Artikel (Minuten)",
+            "es": "Su tiempo de lectura (minutos)"
+          }
+        },
+        {
+          "key": "latest_title",
+          "type": "string",
+          "label": {
+            "en": "Title of the newest article",
+            "fr": "Titre de l'article le plus récent",
+            "de": "Titel des neuesten Artikels",
+            "es": "Título del artículo más reciente"
+          }
+        },
+        {
+          "key": "latest_url",
+          "type": "string",
+          "label": {
+            "en": "Link of the newest article",
+            "fr": "Lien de l'article le plus récent",
+            "de": "Link des neuesten Artikels",
+            "es": "Enlace del artículo más reciente"
+          }
+        },
+        {
+          "key": "latest_id",
+          "type": "number",
+          "label": {
+            "en": "Id of the newest article",
+            "fr": "Identifiant de l'article le plus récent",
+            "de": "ID des neuesten Artikels",
+            "es": "Id. del artículo más reciente"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "unread",
+      "label": {
+        "en": "Wallabag",
+        "fr": "Wallabag",
+        "de": "Wallabag",
+        "es": "Wallabag"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "The newest unread articles, their count and reading time.",
+        "fr": "Les derniers articles non lus, leur nombre et leur temps de lecture.",
+        "de": "Die neuesten ungelesenen Artikel, ihre Anzahl und Lesezeit.",
+        "es": "Los últimos artículos sin leer, su número y su tiempo de lectura."
+      },
+      "icon": "bookmark",
+      "action_timeout_seconds": 30,
+      "settings": [
+        {
+          "key": "tag",
+          "type": "string",
+          "required": false,
+          "label": {
+            "en": "Tag (empty: all)",
+            "fr": "Tag (vide : tous)",
+            "de": "Tag (leer: alle)",
+            "es": "Etiqueta (vacío: todas)"
+          },
+          "description": {
+            "en": "Show the unread articles of this tag only.",
+            "fr": "Afficher seulement les articles non lus de ce tag.",
+            "de": "Nur die ungelesenen Artikel dieses Tags anzeigen.",
+            "es": "Mostrar solo los artículos sin leer de esta etiqueta."
+          }
+        }
+      ]
     }
   ]
 }

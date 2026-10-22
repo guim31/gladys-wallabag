@@ -1,61 +1,130 @@
-# Demo Devices Template
+# Wallabag
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Connect Gladys to [Wallabag](https://wallabag.org), the open-source
+read-it-later application: follow your unread articles and their reading time,
+react when an article is saved or read, save a link from a scene, and show the
+newest unread articles on the dashboard.
 
-## What you get
+Tested with a real Wallabag 2.6.14 (the official Docker image). Feedback is
+welcome on the Gladys forum.
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+## Requirements
+
+- Gladys Assistant 5.1 or later.
+- Wallabag 2, self-hosted or the hosted service
+  [wallabag.it](https://wallabag.it), reachable from the Gladys machine.
+- An API client: in Wallabag, open **API clients management → Create a new
+  client** (a name is enough), then note its **Client ID** and **Client
+  secret**.
+- Your Wallabag username and password: the Wallabag API asks for them to log
+  in (OAuth2). The integration sees the articles of that user.
 
 ## Configuration
 
 1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+2. In **Wallabag address**, enter the address of the server, for instance
+   `192.168.1.50:8080`, or a full address like `https://wallabag.example.org`
+   or `https://app.wallabag.it`.
+3. Paste the **Client ID** and the **Client secret**, then your **Username**
+   and **Password**.
+4. Optional: **Read Wallabag every** (5 minutes by default).
+5. Click **Test the connection**: it shows the user, the unread articles, their
+   reading time and the starred ones.
+6. Open the **Discover** tab and add the **Wallabag** device.
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+The password is used to get a login token, renewed every hour without asking
+for it again; it is never written in the logs.
 
-## Actions
+## Device
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+**Wallabag**, four values kept in the history:
 
-## Scenes
+- _Unread articles_: the "Unread" list of Wallabag.
+- _Starred articles_: the "Starred" list (read or not).
+- _Read today_: the articles marked as read (archived) since midnight, in the
+  time zone of Gladys.
+- _Reading time (unread)_: the sum of the reading times Wallabag estimates for
+  the unread articles, in minutes. Past 2,000 unread articles, the rest is
+  estimated from the average.
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+The values are read every few minutes (the setting above) and right after every
+change made from Gladys.
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+## Dashboard widget
 
-## Dashboard
+**Wallabag**: the number of unread articles, their reading time, the articles
+read today, the six articles saved most recently and not read yet (site,
+reading time, tags, a star for the starred ones, links to the article and to
+Wallabag when they are https), and a **Refresh** button that reads Wallabag
+right away. Set to a tag (for instance `cooking` on the kitchen tablet), the
+widget only shows the unread articles of that tag.
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+## Scene triggers
+
+- **New article**: an article was saved in Wallabag (from the browser
+  extension, the mobile app or a scene).
+- **Article archived**: an article was marked as read (archived).
+
+Both have an optional filter, the **site** (the domain of the article, exactly
+as Wallabag shows it, for instance `www.theguardian.com`), and pass on: title,
+link, site, tags (separated by commas), reading time in minutes, starred,
+article id.
+
+Nothing fires at the first read after the installation. At most 10 articles of
+each kind are announced per read (a bulk import does not send hundreds of
+messages).
+
+## Scene actions
+
+- **Save a link in Wallabag**: a web address (or a variable holding one) and
+  optional tags, separated by commas. Wallabag fetches the page before
+  answering, which can take a few seconds. A link already saved is not
+  duplicated: it gets the new tags. Outputs: article id, title, site, reading
+  time, already saved before.
+- **Mark a Wallabag article as read**: the id of the article (for instance the
+  one given by a trigger) or its address. Outputs: id and title.
+- **Read the unread Wallabag titles**: the articles saved most recently and not
+  read yet (1 to 10), of every tag or of one. Outputs: number read, unread
+  articles in all, titles one per line ("Title — site"), their reading time,
+  title, link and id of the newest.
+
+## Scene examples
+
+- **Evening reading**: at 9 pm, _Read the unread Wallabag titles_ (3
+  articles), then send a message with its _Titles_ and _Their reading time_
+  outputs (insert them with the variable picker).
+- **Keep a recipe**: a trigger of another integration that gives a link (a
+  message received, an RSS feed) → _Save a link in Wallabag_ with the tag
+  `cooking`; the kitchen widget, set to that tag, shows it.
+- **Reading goal**: _Article archived_ → if _Read today_ equals 5, send "Goal
+  of the day reached".
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"Wallabag refused the API client"**: the client ID or secret is wrong, or
+  the client was deleted: create a new one.
+- **"Wallabag refused the username or the password"**: check your login by
+  signing in to Wallabag. An account that signs in through an external provider
+  has no password the API can use.
+- **"Wallabag does not answer"**: check the address and the port from the
+  Gladys machine. Behind a reverse proxy, enter the full address, path
+  included.
+- **"This address does not answer like Wallabag"**: the address leads to
+  another service, or to a login page (an authentication proxy in front of
+  Wallabag must let `/oauth/v2/token` and `/api/` through).
+- **An article saved without a title**: Wallabag could not fetch the page
+  (site unreachable from the Wallabag server, protected page). That is how
+  Wallabag itself behaves.
+- More details: set the `LOG_LEVEL` variable of the integration to `debug`.
+
+## Limitations
+
+- The filter of the triggers only compares exact values: a site, not a tag (an
+  article carries several; the tags are passed on as a variable).
+- Annotations, the content of the articles and the starred flag are not
+  managed from Gladys.
+- Wallabag does not notify: an article is announced at the next read of the
+  integration (5 minutes by default). Each read makes a few small requests,
+  without the content of the articles; wallabag.it publishes no quota.
+- The links of the widget only open https addresses.
+- Not affiliated with Wallabag.

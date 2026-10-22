@@ -1,0 +1,8 @@
+{
+  "status": 200,
+  "body": {
+    "appname": "wallabag",
+    "version": "2.6.14",
+    "allowed_registration": false
+  }
+}

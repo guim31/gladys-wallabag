@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-wallabag",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Wallabag read-it-later in Gladys Assistant: unread articles, new article trigger, save links from scenes.",
   "type": "module",
   "main": "index.js",
   "scripts": {

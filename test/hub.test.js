@@ -126,6 +126,23 @@ test('articles archived: once each, in order, and again after being restored', a
   assert.equal(events(world.fake, 'entry_archived').length, 4);
 });
 
+test('hundreds archived in the same second are announced once, never again', async (t) => {
+  const server = createWallabag();
+  for (let i = 0; i < 150; i += 1) {
+    server.addEntry({ title: `Imported ${i}` });
+  }
+  const world = await createWorld({ server });
+  t.after(() => world.app.stop());
+  const at = world.server.state.clock + 1000;
+  for (const entry of world.server.state.entries.filter((e) => e.is_archived === 0)) {
+    world.server.archive(entry.id, at);
+  }
+  for (let i = 0; i < 4; i += 1) {
+    await world.hub.refresh();
+  }
+  assert.equal(events(world.fake, 'entry_archived').length, 10);
+});
+
 test('a burst (an import) announces the ten newest, the rest is recorded as seen', async (t) => {
   const world = await createWorld();
   t.after(() => world.app.stop());
@@ -226,7 +243,8 @@ test('save a link: tags, already saved, a bad address', async (t) => {
     saved.tags.map((tag) => tag.label),
     ['cuisine', 'week-end'],
   );
-  assert.equal(world.fake.lastState(mainFeature('unread')), 4, 'read again at once');
+  await world.hub.refresh();
+  assert.equal(world.fake.lastState(mainFeature('unread')), 4, 'read again after the save');
   ack = await world.fake.sceneAction('save_url', {
     url: 'https://blog.example.org/zigbee-tips',
     tags: 'gladys',
@@ -249,6 +267,11 @@ test('archive an article: by id, by address, a missing one', async (t) => {
   });
   assert.deepEqual(ack.data.outputs, { entry_id: 10, title: 'A simple bread recipe' });
   assert.deepEqual(unreadIds(world.server), [7]);
+  // Already read: left alone, so it is neither read today again nor announced.
+  const requests = world.server.state.requests.length;
+  ack = await world.fake.sceneAction('archive_entry', { entry: '8' });
+  assert.deepEqual(ack.data.outputs, { entry_id: 8, title: 'Weather of the week' });
+  assert.ok(!world.server.state.requests.slice(requests).includes('PATCH /api/entries/8.json'));
   ack = await world.fake.sceneAction('archive_entry', { entry: '99999' });
   assert.equal(ack.success, false);
   assert.match(ack.error, /n'est pas dans Wallabag/);

@@ -111,7 +111,10 @@ test('dates, references, tags, durations', () => {
   assert.equal(timeOf(null), null);
   assert.deepEqual(parseEntryRef(' 12 '), { id: 12 });
   assert.deepEqual(parseEntryRef(12), { id: 12 });
-  assert.deepEqual(parseEntryRef('https://example.org/a'), { url: 'https://example.org/a' });
+  assert.deepEqual(parseEntryRef('https://example.org/a'), {
+    url: 'https://example.org/a',
+    text: 'https://example.org/a',
+  });
   assert.equal(parseEntryRef('0'), null);
   assert.equal(parseEntryRef('twelve'), null);
   assert.equal(parseUrl('javascript:alert(1)'), null);

@@ -67,7 +67,7 @@ export function summarizeEntry(raw) {
 /**
  * The article a scene designates: its id (a number, "12", the entry id of a
  * trigger) or its address. Null when it is neither.
- * @returns {{ id: number } | { url: string } | null}
+ * @returns {{ id: number } | { url: string, text: string } | null}
  */
 export function parseEntryRef(raw) {
   const text = typeof raw === 'number' ? String(raw) : typeof raw === 'string' ? raw.trim() : '';
@@ -76,7 +76,7 @@ export function parseEntryRef(raw) {
     return Number.isSafeInteger(id) && id > 0 ? { id } : null;
   }
   const url = parseUrl(text);
-  return url ? { url } : null;
+  return url ? { url, text } : null;
 }
 
 /** An http(s) address to save, or null (Wallabag itself saves any text). */

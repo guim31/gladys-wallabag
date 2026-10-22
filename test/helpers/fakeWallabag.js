@@ -165,8 +165,14 @@ export function createWallabag() {
       throw new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } });
     }
     if (state.slow) {
+      // On Node 22 the timer of AbortSignal.timeout does not hold the event
+      // loop: this one does, until the abort.
+      const hold = setInterval(() => {}, 1000);
       await new Promise((resolve, reject) => {
-        init.signal?.addEventListener('abort', () => reject(init.signal.reason));
+        init.signal?.addEventListener('abort', () => {
+          clearInterval(hold);
+          reject(init.signal.reason);
+        });
       });
     }
     if (state.html) {
@@ -234,12 +240,16 @@ export function createWallabag() {
       );
     }
     const match = path.match(/^\/entries\/(\d+)\.json$/);
+    const entry = match && state.entries.find((e) => e.id === Number(match[1]));
+    if (match && !entry) {
+      return answer(404, fixture('patch-missing').body);
+    }
+    if (method === 'GET' && match) {
+      return answer(200, entry);
+    }
     if (method === 'PATCH' && match) {
-      const entry = state.entries.find((e) => e.id === Number(match[1]));
-      if (!entry) {
-        return answer(404, fixture('patch-missing').body);
-      }
-      if (body?.archive === 1 && entry.is_archived !== 1) {
+      if (body?.archive === 1) {
+        // Like the real server: archiving again moves archived_at to now.
         archive(entry.id);
       }
       return answer(200, entry);

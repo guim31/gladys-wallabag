@@ -6,11 +6,10 @@
 // -----------------------------------------------------------------------------
 
 import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
-import { CommandError, WIDGET_KEY } from './hub.js';
+import { CommandError, WIDGET_ITEMS, WIDGET_KEY } from './hub.js';
 import { formatMinutes } from './wallabag/model.js';
 import { DONE_TEXT, each, pick } from './texts.js';
 
-export const MAX_ITEMS = 6;
 export const ACTIONS = { refresh: 'refresh' };
 
 export const TEXT = {
@@ -93,12 +92,13 @@ export async function buildContent(hub, { language = 'en', settings = {} } = {})
     };
   }
   const tag = typeof settings?.tag === 'string' ? settings.tag.trim().slice(0, 100) : '';
-  const list = await hub.widgetEntries(tag, MAX_ITEMS);
+  const list = await hub.widgetEntries(tag, WIDGET_ITEMS);
   const components = [
     {
       type: 'value',
       label: tag ? cut(`#${tag}`, 24) : pick(TEXT.unread, language),
-      value: list ? list.total : hub.counters.unread,
+      // A tag that could not be read: no count rather than the global one.
+      value: list ? list.total : tag ? '—' : hub.counters.unread,
       icon: 'bookmark',
     },
   ];

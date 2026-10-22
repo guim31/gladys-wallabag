@@ -55,6 +55,8 @@ export const MAX_EVENTS_PER_READ = 10;
 // Reads after which an event Gladys keeps refusing is given up.
 export const MAX_TRIES = 3;
 export const MAX_READ = 10;
+// The existence check before a save: a hint only ("already saved").
+export const EXISTS_TIMEOUT = 5_000;
 // The unread articles kept for the widget.
 export const WIDGET_ITEMS = 6;
 
@@ -378,6 +380,7 @@ export class Hub {
       logger.debug(`Wallabag still failing: ${err.message}`);
     }
     this.failure = kind;
+    this.failureDetail = err.message.replace(/^[^:]*: /, '');
     if (['unauthorized', 'client', 'invalid', 'not_found'].includes(kind)) {
       // Other credentials may belong to another user.
       this.user = null;
@@ -464,7 +467,8 @@ export class Hub {
       server: this.config.url ?? '',
       lastId,
       archivedAt: cursor.at,
-      archivedIds: cursor.ids.slice(-100),
+      // Every id archived in that second that a read can return again.
+      archivedIds: cursor.ids.slice(-ARCHIVED_PAGE * ARCHIVED_PAGES),
     };
     if (JSON.stringify(next) !== JSON.stringify(this.seen)) {
       this.seen = next;
@@ -746,7 +750,10 @@ export class Hub {
       await this.refresh();
     }
     if (!this.user || client !== this.client) {
-      throw this.#commandError(new WallabagError(this.failure ?? 'unreachable', ''), 'read');
+      throw this.#commandError(
+        new WallabagError(this.failure ?? 'unreachable', `: ${this.failureDetail ?? ''}`),
+        'read',
+      );
     }
     return client;
   }
@@ -763,7 +770,7 @@ export class Hub {
     const client = await this.#ready();
     let already = false;
     try {
-      already = (await client.exists(url)) !== null;
+      already = (await client.exists(url, EXISTS_TIMEOUT)) !== null;
     } catch (err) {
       logger.debug(`Existence not checked: ${err.message}`);
     }
@@ -774,7 +781,7 @@ export class Hub {
       throw this.#commandError(err, 'http');
     }
     logger.info(already ? 'Article already in Wallabag, tags added' : 'Article saved in Wallabag');
-    await this.refresh();
+    this.#refreshLater();
     return { entry, already };
   }
 
@@ -789,21 +796,43 @@ export class Hub {
     }
     const client = await this.#ready();
     let entry;
+    let changed = false;
     try {
-      const id = ref.id ?? (await client.exists(ref.url));
+      // The address as typed first: Wallabag compares the address it saved.
+      let id = ref.id ?? (await client.exists(ref.text));
+      if (id === null && ref.url && ref.url !== ref.text) {
+        id = await client.exists(ref.url);
+      }
       if (id === null) {
         throw new CommandError('missing', this.language);
       }
-      entry = summarizeEntry(await client.archive(id));
+      // Archiving again moves `archived_at` to now (checked on 2.6.14): an
+      // article already read is left alone, or it would count as read today
+      // and fire "Article archived" again.
+      entry = summarizeEntry(await client.entry(id));
+      if (!entry.archived) {
+        entry = summarizeEntry(await client.archive(id));
+        changed = true;
+      }
     } catch (err) {
       if (err instanceof WallabagError && err.kind === 'not_found') {
         throw new CommandError('missing', this.language);
       }
       throw this.#commandError(err, 'http');
     }
-    logger.info('Article archived in Wallabag');
-    await this.refresh();
+    if (changed) {
+      logger.info('Article archived in Wallabag');
+      this.#refreshLater();
+    }
     return entry;
+  }
+
+  /**
+   * Read Wallabag again after a change, without making the scene wait for it
+   * (a read can take several pages, and a timer read may be running).
+   */
+  #refreshLater() {
+    this.refresh().catch((err) => logger.error('Read failed', err));
   }
 
   /**
@@ -849,7 +878,7 @@ export function entryData(entry) {
   return {
     // The filter of the triggers: the site, as Wallabag names it.
     domain: entry.domain,
-    title: entry.title,
+    title: entry.title.slice(0, 1000),
     url: entry.url.slice(0, 1000),
     tags: entry.tags.join(', ').slice(0, 1000),
     reading_time: entry.readingTime,

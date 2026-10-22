@@ -129,8 +129,11 @@ export class WallabagClient {
             : status === 404
               ? 'invalid'
               : 'http';
-    } else if (status === 401 || status === 403) {
+    } else if (status === 401) {
       kind = 'unauthorized';
+    } else if (status === 403) {
+      // The article of another user: not a credential problem.
+      kind = 'not_found';
     }
     return new WallabagError(
       kind,
@@ -261,10 +264,11 @@ export class WallabagClient {
   }
 
   /** The id of the entry saved with that address, or null. */
-  async exists(url) {
+  async exists(url, timeout) {
     const data = await this.#api(
       'GET',
       `/entries/exists.json?${new URLSearchParams({ url, return_id: '1' })}`,
+      { timeout },
     );
     return Number.isInteger(data?.exists) ? data.exists : null;
   }
@@ -278,6 +282,15 @@ export class WallabagClient {
     const entry = await this.#api('POST', '/entries.json', { body, timeout: SAVE_TIMEOUT });
     if (!Number.isInteger(entry?.id)) {
       throw new WallabagError('invalid', 'Wallabag did not answer the saved entry');
+    }
+    return entry;
+  }
+
+  /** One entry (with its content: only used for a single article). */
+  async entry(id) {
+    const entry = await this.#api('GET', `/entries/${id}.json`);
+    if (!Number.isInteger(entry?.id)) {
+      throw new WallabagError('invalid', 'Wallabag did not answer the entry');
     }
     return entry;
   }

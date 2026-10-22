@@ -122,6 +122,8 @@ test/fixtures/wallabag/2.6.14/    bodies recorded on a real Wallabag 2.6.14
 - `wallabag/wallabag` (SQLite by default, about a minute to install, port 80,
   `SYMFONY__ENV__DOMAIN_NAME`), on a bridge network `gladys-test-wallabag`;
   a Node container on the same network drives the API.
+- Tests on Node 22: the timer of `AbortSignal.timeout` does not hold the event
+  loop; the "slow" fake `fetch` holds it itself until the abort.
 
 ---
 

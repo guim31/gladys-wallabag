@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-22
+
 ### Added
 
 - Wallabag in Gladys, over its REST API and OAuth2 (an API client and your
@@ -23,3 +25,6 @@ the notes of the version's GitHub Release.
 - **Wallabag** dashboard widget: unread count, reading time, articles read
   today, newest unread articles, for every tag or one, and a Refresh button.
 - Texts and documentation in English, French, German and Spanish.
+
+[Unreleased]: https://github.com/guim31/gladys-wallabag/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-wallabag/releases/tag/v1.0.0

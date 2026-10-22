@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "body": [
+    {
+      "id": 5,
+      "label": "cuisine",
+      "slug": "t:cuisine",
+      "nbEntries": 1
+    },
+    {
+      "id": 1,
+      "label": "domotique",
+      "slug": "t:domotique",
+      "nbEntries": 1
+    },
+    {
+      "id": 3,
+      "label": "gladys",
+      "slug": "t:gladys",
+      "nbEntries": 1
+    },
+    {
+      "id": 6,
+      "label": "later",
+      "slug": "t:later",
+      "nbEntries": 1
+    },
+    {
+      "id": 2,
+      "label": "zigbee",
+      "slug": "t:zigbee",
+      "nbEntries": 1
+    }
+  ]
+}

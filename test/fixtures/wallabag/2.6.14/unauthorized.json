@@ -1,0 +1,7 @@
+{
+  "status": 401,
+  "body": {
+    "error": "invalid_grant",
+    "error_description": "The access token provided is invalid."
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "gladys-wallabag",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Wallabag read-it-later in Gladys Assistant: unread articles, new article trigger, save links from scenes.",
   "type": "module",
